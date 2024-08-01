@@ -7,7 +7,9 @@ on:
     branches: [ "main" ]
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
+  checks: write
 
 jobs:
   build:
@@ -27,6 +29,23 @@ jobs:
 
     - name: Install dependencies
       run: poetry install
+
+    - name: Format
+      run: make format
+
+    - name: Push any changes
+      run: |
+        if [[ `git status --porcelain` ]]; then
+          git add src/*
+          git add tests/*
+          git commit -m "code formatting"
+          git push
+        else
+          echo "No changes"
+        fi
+
+    - name: Lint
+      run: make lint
 
     - name: Test
       run: make test
