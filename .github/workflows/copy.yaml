@@ -1,0 +1,57 @@
+name: Copy
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: write
+
+jobs:
+  build:
+    name: run checks
+
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.ref }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+          python-version-file: 'pyproject.toml'
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+
+    - name: Install dependencies
+      run: poetry install
+
+    - name: Format
+      run: make format
+
+    - name: Push any changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+        
+        if [[ `git status --porcelain` ]]; then
+          git add src/*
+          git add tests/*
+          git commit -m "code formatting"
+          git push
+        else
+          echo "No changes"
+        fi
+
+    - name: Lint
+      run: make lint
+
+    - name: Test
+      run: make test
